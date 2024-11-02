@@ -64,7 +64,7 @@ youtubeRouter.use('/*', async (c, next) => {
 
 
 // Create a route to fetch the list of youtube videos from channel
-youtubeRouter.get('/videos/:channelId', async (c) => {
+youtubeRouter.get('/syncvideos/:channelId', async (c) => {
     try {
         const prisma = new PrismaClient({ datasourceUrl: c.env.ACC_DATABASE_URL }).$extends(withAccelerate());
         const refreshToken = c.get('refreshToken');
@@ -73,8 +73,8 @@ youtubeRouter.get('/videos/:channelId', async (c) => {
         console.log(`INFO|user id-${userId}`);
         const channelId = await c.req.param('channelId');
 
-        const ytChannelData = await prisma.youTubeChannel.findFirst({ where: { id: Number(channelId)}});
-        if (!ytChannelData) { 
+        const ytChannelData = await prisma.youTubeChannel.findFirst({ where: { id: Number(channelId) } });
+        if (!ytChannelData) {
             c.status(404);
             return c.json({ error: 'Channel not found' });
         }
@@ -103,9 +103,9 @@ youtubeRouter.get('/videos/:channelId', async (c) => {
         const videoResponse = await youtube.playlistItems.list({
             part: ['snippet', 'contentDetails'],
             playlistId: uploadsPlaylistId,
-            maxResults: 50, 
+            maxResults: 50,
         });
-     
+
         const videosList: VideoType[] = videoResponse.data.items?.map((item) => ({
             youtubeChannelId: Number(channelId),
             title: item.snippet?.title || '',
@@ -115,7 +115,7 @@ youtubeRouter.get('/videos/:channelId', async (c) => {
 
         const res = await prisma.video.createMany({
             data: videosList,
-            skipDuplicates: true, 
+            skipDuplicates: true,
         });
 
         return c.json({ 'count': res?.count, videos: videosList });
@@ -142,3 +142,14 @@ youtubeRouter.get('/channel', async (c) => {
 });
 
 // Get the list of videos from using channel id
+youtubeRouter.get('/videos/:channelId', async (c) => {
+    try {
+        const channelId = await c.req.param('channelId');
+        const prisma = new PrismaClient({ datasourceUrl: c.env.ACC_DATABASE_URL }).$extends(withAccelerate());
+        const videosList = await prisma.video.findMany({ where: { youtubeChannelId: Number(channelId) } });
+        return c.json({ 'videos': videosList });
+    } catch (error) {
+        c.status(422);
+        return c.json({ error: error });
+    }
+})
