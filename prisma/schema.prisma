@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id                   Int                  @id @default(autoincrement())
+  name                 String?
+  email                String               @unique
+  passwordHash         String?
+  youtubeChannels      YouTubeChannel[]
+  notifications        Notification[]
+  notificationSettings NotificationSettings?
+  billingDetails       BillingDetails?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+}
+
+model YouTubeChannel {
+  id                   Int             @id @default(autoincrement())
+  user                 User            @relation(fields: [userId], references: [id])
+  userId               Int
+  channelId            String          @unique // YouTube channel ID
+  channelName          String
+  thumbnailUrl          String          @default("channel-thumbnail.png")
+  accessToken          String?                 // Store securely
+  refreshToken         String?                 // Store securely
+  tokenExpiry          DateTime?
+  videos               Video[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model Video {
+  id                   Int             @id @default(autoincrement())
+  youtubeChannel       YouTubeChannel  @relation(fields: [youtubeChannelId], references: [id])
+  youtubeChannelId     Int
+  videoId              String          @unique // YouTube video ID
+  title                String
+  currentViewCount     Int            @default(0)
+  thumbnailUrl         String          @default("video-thumbnail.png")
+  milestones           Milestone[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model Milestone {
+  id                   Int        @id @default(autoincrement())
+  video                Video      @relation(fields: [videoId], references: [id])
+  videoId              Int
+  viewThreshold        Int
+  thumbnailUrl         String
+  achieved             Boolean    @default(false)
+  achievedAt           DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model Notification {
+  id                   Int        @id @default(autoincrement())
+  user                 User       @relation(fields: [userId], references: [id])
+  userId               Int
+  type                 String
+  message              String
+  read                 Boolean    @default(false)
+  createdAt            DateTime   @default(now())
+}
+
+model NotificationSettings {
+  id                   Int        @id @default(autoincrement())
+  user                 User       @relation(fields: [userId], references: [id])
+  userId               Int        @unique
+  emailNotifications   Boolean    @default(true)
+  smsNotifications     Boolean    @default(false)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model BillingDetails {
+  id                   Int        @id @default(autoincrement())
+  user                 User       @relation(fields: [userId], references: [id])
+  userId               Int        @unique
+  plan                 String
+  paymentMethod        String
+  billingAddress       String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
