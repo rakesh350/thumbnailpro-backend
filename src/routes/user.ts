@@ -61,14 +61,11 @@ userRouter.get('/oauth2callback', async (c) => {
         const { data } = await guser.userinfo.get();
 
         const prisma = new PrismaClient({ datasourceUrl: c.env.ACC_DATABASE_URL }).$extends(withAccelerate());
-        const user = await prisma.user.create({
-            data: {
-                name: data.name,
-                email: data.email || ''
-            }
+        const user = await prisma.user.upsert({
+            where: { email: data.email || ''},
+            update: { name: data.name },
+            create: { email: data.email || '', name: data.name  }
         });
-
-        // todo: handle failure to create user
 
         const yt = google.youtube({
             auth: oauth2Client,
@@ -85,8 +82,10 @@ userRouter.get('/oauth2callback', async (c) => {
         if (channelData && channelData.length > 0) {
             const channel = channelData[0];
             if (channel.id && channel.snippet && channel.snippet.title && channel.snippet.thumbnails?.medium && channel.snippet.thumbnails?.medium.url) {
-                const ytChannel = await prisma.youTubeChannel.create({
-                    data: {
+                const ytChannel = await prisma.youTubeChannel.upsert({
+                    where: { channelId: channel.id },
+                    update: { channelName: channel.snippet.title, thumbnailUrl: channel.snippet.thumbnails.medium.url },
+                    create: {
                         userId: user.id,
                         channelId: channel.id,
                         channelName: channel.snippet.title,
