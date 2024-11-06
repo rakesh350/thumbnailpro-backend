@@ -152,4 +152,5 @@ youtubeRouter.get('/videos/:channelId', async (c) => {
         c.status(422);
         return c.json({ error: error });
     }
-})
+});
+
