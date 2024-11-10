@@ -133,3 +133,4 @@ dist
 .pnp.*
 .env copy
 wrangler.toml
+wrangler.toml

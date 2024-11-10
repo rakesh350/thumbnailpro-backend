@@ -63,9 +63,17 @@ milestoneRouter.post('/save', async (c) => {
             skipDuplicates: true,
         });
 
-        return  c.json({ msg: 'Milestone saved successfully', milestones });
+        return c.json({ msg: 'Milestone saved successfully', milestones });
     } catch (error) {
         c.status(422);
         return c.json({ msg: 'Invalid video' });
     }
+});
+
+milestoneRouter.get('/bucket', async (c) => {
+    const { Storage } = await import('@google-cloud/storage');
+    const storage = new Storage();
+    const bucket = await storage.bucket('thumbnailpro-bkt');
+    const files = bucket.getFiles();
+    return c.json({ files: files }); 
 });
